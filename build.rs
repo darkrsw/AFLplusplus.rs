@@ -1,11 +1,12 @@
 extern crate rustc_version;
 extern crate xdg;
 
-use std::ffi::OsStr;
+use std::fs::copy;
 use std::path::Path;
 use std::process::Command;
 
-static AFL_SRC_PATH: &str = "afl-2.52b";
+static AFL_SRC_PATH: &str = "AFLplusplus";
+static AFL_LLVM_SRC_PATH: &str = "AFLplusplus/llvm_mode";
 
 #[path = "src/common.rs"]
 mod common;
@@ -19,7 +20,7 @@ fn build_afl(out_dir: &Path) {
     let mut command = Command::new("make");
     command
         .current_dir(AFL_SRC_PATH)
-        .args(&["clean", "all", "install"])
+        .args(&["clean", "source-only", "install"])
         // Rely on LLVM’s built-in execution tracing feature instead of AFL’s
         // LLVM passi instrumentation.
         .env("AFL_TRACE_PC", "1")
@@ -34,20 +35,22 @@ fn build_afl(out_dir: &Path) {
 }
 
 fn build_afl_llvm_runtime() {
-    let status = Command::new("cc")
-        .current_dir(AFL_SRC_PATH)
-        .arg("-c")
-        .arg("-O1")
-        .arg("-fPIC")
-        .arg("-fno-omit-frame-pointer")
-        .arg("llvm_mode/afl-llvm-rt.o.c")
-        .arg("-fpermissive")
-        .args(&[OsStr::new("-o"), common::object_file_path().as_os_str()])
+    let status = Command::new("make")
+        .current_dir(AFL_LLVM_SRC_PATH)
+        .arg("../afl-llvm-rt.o")
+        .env("AFL_TRACE_PC", "1")
         .status()
-        .expect("could not run 'gcc'");
+        .expect("could not run 'make'");
     assert!(status.success());
 
+    copy(
+        Path::new(AFL_SRC_PATH).join("afl-llvm-rt.o"),
+        common::object_file_path(),
+    )
+    .expect("can't copy 'afl-llvm-rt.o'");
+
     let status = Command::new("ar")
+        .current_dir(AFL_SRC_PATH)
         .arg("r")
         .arg(common::archive_file_path())
         .arg(common::object_file_path())

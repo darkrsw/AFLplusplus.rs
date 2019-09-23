@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use xdg;
 
 fn xdg_dir() -> xdg::BaseDirectories {
-    let prefix = Path::new("afl.rs")
+    let prefix = Path::new("AFLplusplus.rs")
         .join(afl_rustc_version())
         .join(pkg_version());
     xdg::BaseDirectories::with_prefix(prefix).unwrap()
@@ -23,7 +23,7 @@ pub fn afl_rustc_version() -> String {
 }
 
 fn pkg_version() -> String {
-    let mut ret = String::from("afl.rs-");
+    let mut ret = String::from("AFLplusplus.rs-");
 
     let version = env!("CARGO_PKG_VERSION");
     assert!(!version.is_empty());
@@ -33,11 +33,13 @@ fn pkg_version() -> String {
 }
 
 pub fn afl_dir() -> PathBuf {
-    xdg_dir().create_data_directory("afl").unwrap()
+    xdg_dir().create_data_directory("aflplusplus").unwrap()
 }
 
 pub fn afl_llvm_rt_dir() -> PathBuf {
-    xdg_dir().create_data_directory("afl-llvm-rt").unwrap()
+    xdg_dir()
+        .create_data_directory("aflplusplus-llvm-rt")
+        .unwrap()
 }
 
 #[allow(dead_code)]
